@@ -31,7 +31,6 @@ void printIMUData(const Payload_IMU_t& data)
 IMUSubscriber::IMUSubscriber()
 : IMUSocketHandler()
 , mClientSocketPath("")
-, mTimeoutMs(0)
 {
 }
 
@@ -44,9 +43,8 @@ bool IMUSubscriber::initialise(const Parameters& params)
 {
     mSocketPath = params.mSocketPath;
     mClientSocketPath = mSocketPath + "_client" + std::to_string(getpid());
-    mTimeoutMs = params.mTimeoutUs;
     disconnect();
-    return setupSocket(mClientSocketPath) && registerToServer();
+    return setupSocket(mClientSocketPath) && registerToServer() && setSocketTimeout(params.mTimeoutMs);
 }
 
 void* IMUSubscriber::threadBody()
@@ -55,19 +53,6 @@ void* IMUSubscriber::threadBody()
     ssize_t bytes_read;
     struct sockaddr_un src_addr;
     socklen_t addrlen = sizeof(src_addr);
-    
-    // Set up timeout for the socket
-    if (mTimeoutMs > 0)
-    {
-        struct timeval tv;
-        tv.tv_sec = mTimeoutMs / 1000;  // Convert ms to seconds
-        tv.tv_usec = (mTimeoutMs % 1000) * 1000;  // Remaining ms to microseconds
-        
-        if (setsockopt(mSocket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0)
-        {
-            spdlog::error("Failed to set socket timeout: {}", strerror(errno));
-        }
-    }
     
     while (isRunning())
     {
@@ -132,5 +117,22 @@ bool IMUSubscriber::registerToServer()
     }
     
     spdlog::info("Socket created successfully and registered with publisher");
+    return true;
+}
+
+bool IMUSubscriber::setSocketTimeout(const ulong timeoutMs)
+{
+    if (timeoutMs > 0)
+    {
+        struct timeval tv;
+        tv.tv_sec = timeoutMs / 1000;  // Convert ms to seconds
+        tv.tv_usec = (timeoutMs % 1000) * 1000;  // Remaining ms to microseconds
+        
+        if (setsockopt(mSocket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0)
+        {
+            spdlog::error("Failed to set socket timeout: {}", strerror(errno));
+            return false;
+        }
+    }
     return true;
 }

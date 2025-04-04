@@ -14,14 +14,21 @@ struct Parameters;
  * @brief Base class for IMU socket communication handling
  * 
  * This class provides common functionality for socket-based IPC
- * used by both publisher and subscriber components.
+ * used by both publisher and subscriber components. It handles
+ * socket creation, binding, and cleanup operations.
  */
 template <typename T>
 class IMUSocketHandler : public GenericThread<T>
 {
 public:
+    /**
+     * @brief Constructor initializes socket-related members
+     */
     IMUSocketHandler() : mSocketPath(""), mSocket(-1) {}
 
+    /**
+     * @brief Destructor ensures socket resources are cleaned up
+     */
     virtual ~IMUSocketHandler()
     {
         disconnect();
@@ -29,6 +36,10 @@ public:
 
     /**
      * @brief Initialize the socket handler with parameters
+     * 
+     * This method should be implemented by derived classes to
+     * set up the socket handler with specific parameters.
+     * 
      * @param params The parameters structure
      * @return true if initialization was successful, false otherwise
      */
@@ -37,6 +48,9 @@ public:
 protected:
     /**
      * @brief Disconnect and clean up socket resources
+     * 
+     * Closes the socket if it's open. Derived classes should
+     * override this to perform additional cleanup if needed.
      */
     virtual void disconnect()
     {
@@ -50,7 +64,10 @@ protected:
     
     /**
      * @brief Set up the socket for communication
-     * @param socketToBind the address of a socket to bind
+     * 
+     * Creates a Unix domain datagram socket and binds it to the specified path.
+     * 
+     * @param socketToBind The path to bind the socket to
      * @return true if socket setup was successful, false otherwise
      */
     virtual bool setupSocket(const std::string& socketToBind)
@@ -79,8 +96,6 @@ protected:
         return true;
     }
 
-    /** Path to the socket */
-    std::string mSocketPath;
-    /** Socket file descriptor */
-    int mSocket;
+    std::string mSocketPath; ///< Path to the socket
+    int mSocket;             ///< Socket file descriptor
 };

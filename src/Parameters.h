@@ -1,17 +1,21 @@
 #pragma once
 
 #include <string>
-#include <cstdint>
 
 /**
- * @brief Structure to hold the parameters for the IMU publisher and subscriber.
+ * @brief Parameters structure for IMU publisher and subscriber
+ * 
+ * This structure holds configuration parameters that are
+ * passed to both the publisher and subscriber components.
  */
 struct Parameters
 {
-    /** The path to the socket that needs to be created */
-    std::string mSocketPath = "";
-    /** The publication frequency in Hz */
-    uint16_t mFrequencyHz = 500;
-    /** Timeout in us for subscriber */
-    uint16_t mTimeoutUs = 100;
+    std::string mSocketPath; ///< Path to the Unix domain socket
+    int mFrequencyHz;        ///< Publication frequency in Hz
+    ulong mTimeoutMs;        ///< Timeout for socket operations in milliseconds
+
+    /**
+     * @brief Initialise all parameters with default values.
+     */
+    Parameters() : mSocketPath(""), mFrequencyHz(500), mTimeoutMs(100) {}
 };

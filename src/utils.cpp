@@ -60,8 +60,8 @@ bool parseParameters(int argc, char* argv[], Parameters& params)
                 spdlog::info("Frequency: {} Hz", params.mFrequencyHz);
                 break;
             case 't':
-                params.mTimeoutUs = std::stoi(optarg);
-                spdlog::info("Timeout: {} ms", params.mTimeoutUs);
+                params.mTimeoutMs = std::stoi(optarg);
+                spdlog::info("Timeout: {} ms", params.mTimeoutMs);
                 break;
             default:
                 return false;
@@ -70,11 +70,6 @@ bool parseParameters(int argc, char* argv[], Parameters& params)
     if (params.mSocketPath.empty())
     {
         spdlog::error("Socket path is required");
-        return false;
-    }
-    if (params.mFrequencyHz <= 0 || params.mFrequencyHz > 1000)
-    {
-        spdlog::error("Invalid frequency (must be between 1-1000 Hz)");
         return false;
     }
     return true;
