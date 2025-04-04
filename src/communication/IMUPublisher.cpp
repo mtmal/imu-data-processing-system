@@ -1,13 +1,8 @@
-#include <spdlog/spdlog.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <unistd.h>
-
 #include <scoped_lock.h>
 
-#include "IMUPublisher.h"
-#include "IMUTypes.h"
-#include "Parameters.h"
+#include "communication/IMUPublisher.h"
+#include "core/Parameters.h"
+#include "core/PayloadIMU.h"
 
 constexpr long NSEC_PER_SEC = 1000000000L;
 

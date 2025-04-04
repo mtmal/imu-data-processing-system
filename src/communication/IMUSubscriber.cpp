@@ -1,15 +1,10 @@
 #include <csignal>
 #include <iostream>
 #include <iomanip>
-#include <spdlog/spdlog.h>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <unistd.h>
-#include <time.h>
 
-#include "IMUSubscriber.h"
-#include "IMUTypes.h"
-#include "Parameters.h"
+#include "communication/IMUSubscriber.h"
+#include "core/Parameters.h"
+#include "core/PayloadIMU.h"
 
 
 constexpr char REG_MSG[9] = "REGISTER";

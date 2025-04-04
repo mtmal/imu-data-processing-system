@@ -1,10 +1,10 @@
 #include <iostream>
-#include <spdlog/spdlog.h>
 #include <signal.h>
 
-#include "IMUPublisher.h"
-#include "RandomIMUDataProvider.h"
-#include "utils.h"
+#include "communication/IMUPublisher.h"
+#include "core/Parameters.h"
+#include "providers/RandomIMUDataProvider.h"
+#include "utils/utils.h"
 
 sem_t sem_waiter;
 

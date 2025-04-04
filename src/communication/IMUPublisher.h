@@ -1,10 +1,8 @@
 #pragma once
 
-#include <string>
-#include <sys/un.h>
 #include <vector>
 #include "IMUSocketHandler.h"
-#include "IMUDataProvider.h"
+#include "providers/IMUDataProvider.h"
 
 struct Parameters;
 

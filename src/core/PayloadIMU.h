@@ -1,5 +1,7 @@
 #pragma once
 
+#include <cstdint>
+
 /**
  * A structure holding IMU data.
  * @note gyro measurements were changed from int32_t to float to match other fields.

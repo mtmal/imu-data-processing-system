@@ -1,7 +1,8 @@
 #include <getopt.h>
 #include <spdlog/spdlog.h>
 
-#include "utils.h"
+#include "core/Parameters.h"
+#include "utils/utils.h"
 
 
 void setupLogger(const std::string& logLevel)

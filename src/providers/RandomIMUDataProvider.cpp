@@ -1,6 +1,6 @@
 #include <spdlog/spdlog.h>
-#include "IMUTypes.h"
-#include "RandomIMUDataProvider.h"
+#include "core/PayloadIMU.h"
+#include "providers/RandomIMUDataProvider.h"
 
 RandomIMUDataProvider::RandomIMUDataProvider()
 : mGen(),

@@ -1,9 +1,9 @@
 #include <csignal>
 #include <iostream>
-#include <spdlog/spdlog.h>
 
-#include "IMUSubscriber.h"
-#include "utils.h"
+#include "communication/IMUSubscriber.h"
+#include "core/Parameters.h"
+#include "utils/utils.h"
 
 sem_t semaphore;
 

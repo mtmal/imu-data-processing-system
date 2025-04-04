@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Parameters.h"
+struct Parameters;
 
 /**
  * @brief Set up the logger with the specified log level
