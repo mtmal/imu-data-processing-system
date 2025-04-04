@@ -8,7 +8,7 @@
 #include "core/Parameters.h"
 #include "core/PayloadIMU.h"
 
-constexpr char REG_MSG[9] = "REGISTER";
+inline constexpr char REG_MSG[9] = "REGISTER";
 
 namespace
 {

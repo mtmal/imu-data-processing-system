@@ -4,7 +4,7 @@
 #include "core/Parameters.h"
 #include "core/PayloadIMU.h"
 
-constexpr long NSEC_PER_SEC = 1000000000L;
+inline constexpr long NSEC_PER_SEC = 1000000000L;
 
 IMUPublisher::IMUPublisher(IMUDataProvider& dataProvider) 
 : IMUSocketHandler(),
