@@ -1,0 +1,26 @@
+cmake_minimum_required(VERSION 3.10)
+project(CloneCodingTask)
+
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
+
+# Add pthread library
+find_package(Threads REQUIRED)
+
+# Add logging library (spdlog)
+find_package(spdlog REQUIRED)
+
+# Add utils directory to include paths
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/utils/src)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
+
+# Create publisher executable
+add_executable(publisher 
+    src/publisher.cpp
+    src/IMUPublisher.cpp
+)
+target_link_libraries(publisher 
+    PRIVATE 
+    pthread 
+    spdlog::spdlog
+)
