@@ -6,7 +6,7 @@
 #include "IMUPublisher.h"
 #include "utils.h"
 
-std::atomic<bool> running(true);
+sem_t sem_waiter;
 
 void printUsage(const char* programName)
 {
@@ -20,15 +20,19 @@ void printUsage(const char* programName)
 void signalHandler(int signum)
 {
     spdlog::info("Received signal: {}, stopping gracefully", signum);
-    running = false;
+    sem_post(&sem_waiter);
 }
 
 int main(int argc, char* argv[])
 {
     IMUPublisher publisher;
     Parameters params;
+    sem_init(&sem_waiter, 0, 0);
+
+    // Set default logger level
     setupLogger("INFO");
 
+    // Parse command line arguments
     if (!parseParameters(argc, argv, params))
     {
         spdlog::error("Failed to parse parameters");
@@ -36,6 +40,7 @@ int main(int argc, char* argv[])
         return 1;
     }
 
+    // Check if socket path is provided
     if (params.mSocketPath.empty())
     {
         spdlog::error("Socket path is required");
@@ -53,13 +58,12 @@ int main(int argc, char* argv[])
     publisher.startThread();
 
     spdlog::info("IMU Publisher is running. Press Ctrl+C to stop.");
-    while (publisher.isRunning() && running)
-    {
-        // Main loop can be empty, as the thread handles the publishing
-        std::this_thread::sleep_for(std::chrono::milliseconds(100));
-    }
+    
+    // Main loop can be empty, as the thread handles the publishing
+    sem_wait(&sem_waiter);
 
     publisher.stopThread(true);
     spdlog::info("Publisher stopped");
+    sem_destroy(&sem_waiter);
     return 0;
 }
