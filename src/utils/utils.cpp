@@ -41,11 +41,12 @@ bool parseParameters(int argc, char* argv[], Parameters& params)
         {"log-level", required_argument, 0, 'l'},
         {"frequency-hz", required_argument, 0, 'f'},
         {"timeout-ms", required_argument, 0, 't'},
+        {"ahrs-type", required_argument, 0, 'a'},
         {0, 0, 0, 0}
     };
 
     int opt;
-    while ((opt = getopt_long(argc, argv, "s:l:f:t:", long_options, nullptr)) != -1)
+    while ((opt = getopt_long(argc, argv, "s:l:f:t:a:", long_options, nullptr)) != -1)
     {
         switch (opt)
         {
@@ -63,6 +64,23 @@ bool parseParameters(int argc, char* argv[], Parameters& params)
             case 't':
                 params.mTimeoutMs = std::stoi(optarg);
                 spdlog::info("Timeout: {} ms", params.mTimeoutMs);
+                break;
+            case 'a':
+                if (std::string(optarg) == "madgwick")
+                {
+                    params.mAhrsType = AHRSType::MADGWICK;
+                    spdlog::info("AHRS: Madgwick algorithm");
+                }
+                else if (std::string(optarg) == "simple")
+                {
+                    params.mAhrsType = AHRSType::SIMPLE;
+                    spdlog::info("AHRS: Simple algorithm");
+                }
+                else
+                {
+                    params.mAhrsType = AHRSType::NONE;
+                    spdlog::info("AHRS: Disabled");
+                }
                 break;
             default:
                 return false;

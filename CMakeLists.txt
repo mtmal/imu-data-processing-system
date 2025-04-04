@@ -20,24 +20,33 @@ add_executable(publisher
     src/utils/utils.cpp
     src/providers/RandomIMUDataProvider.cpp
 )
-target_link_libraries(publisher 
-    PRIVATE 
-    pthread 
-    spdlog::spdlog
+# Add include directories for publisher
+target_include_directories(publisher PRIVATE 
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/providers
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/communication
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils
 )
+target_link_libraries(publisher PRIVATE pthread spdlog::spdlog)
 
 # Create subscriber executable
-add_executable(subscriber 
+add_executable(subscriber
     src/subscriber.cpp
     src/communication/IMUSubscriber.cpp
     src/utils/utils.cpp
+    src/ahrs/AHRS.cpp
+    src/ahrs/MadgwickAHRS.cpp
+    src/ahrs/SimpleAHRS.cpp
+    src/ahrs/AHRSFactory.cpp
 )
-target_link_libraries(subscriber 
-    PRIVATE 
-    pthread 
-    spdlog::spdlog
+# Add include directories for subscriber
+target_include_directories(subscriber PRIVATE 
+    ${CMAKE_CURRENT_SOURCE_DIR}/src
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/core
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/providers
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/communication
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/utils
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/ahrs
 )
-
-# Set include directories for both targets
-target_include_directories(publisher PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
-target_include_directories(subscriber PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_link_libraries(subscriber PRIVATE pthread spdlog::spdlog)

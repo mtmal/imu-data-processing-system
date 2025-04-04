@@ -2,15 +2,23 @@
 #include <iostream>
 #include <iomanip>
 
+#include "ahrs/AHRS.h"
+#include "ahrs/AHRSFactory.h"
 #include "communication/IMUSubscriber.h"
 #include "core/Parameters.h"
 #include "core/PayloadIMU.h"
 
-
 constexpr char REG_MSG[9] = "REGISTER";
 
-
-void printIMUData(const Payload_IMU_t& data)
+namespace
+{
+/**
+ * @brief Print IMU data to console
+ * 
+ * @param data The IMU data to print
+ * @param ahrs The AHRS processor (if available)
+ */
+void printIMUData(const Payload_IMU_t& data, const std::unique_ptr<AHRS>& ahrs = nullptr)
 {
     std::cout << std::fixed << std::setprecision(2);
     std::cout << "=== IMU Data ===\n";
@@ -20,12 +28,30 @@ void printIMUData(const Payload_IMU_t& data)
     std::cout << "Gyro:  [" << data.xGyro << ", " << data.yGyro << ", " << data.zGyro << "]\n";
     std::cout << "TimestampMag: " << data.timestampMag << " ms\n";
     std::cout << "Mag:   [" << data.xMag << ", " << data.yMag << ", " << data.zMag << "]\n";
+    
+    if (ahrs != nullptr)
+    {
+        const float* quat = ahrs.get()->getQuaternion();
+        const float* angles = ahrs.get()->getAngles();
+        
+        std::cout << "=== AHRS Data ===\n";
+        std::cout << "Quaternion: [" << quat[0] << ", " 
+                                     << quat[1] << ", " 
+                                     << quat[2] << ", " 
+                                     << quat[3] << "]\n";
+        std::cout << "Angles: [Roll: " << angles[0] << "°, "
+                  << "Pitch: " << angles[1] << "°, "
+                  << "Yaw: " << angles[2] << "°]\n";
+    }
+    
     std::cout << "----------------------------------\n";
 }
+} // end of anonymouse namespace
 
 IMUSubscriber::IMUSubscriber()
 : IMUSocketHandler()
 , mClientSocketPath("")
+, mAhrs(nullptr)
 {
 }
 
@@ -38,6 +64,10 @@ bool IMUSubscriber::initialise(const Parameters& params)
 {
     mSocketPath = params.mSocketPath;
     mClientSocketPath = mSocketPath + "_client" + std::to_string(getpid());
+    
+    // Create AHRS instance based on parameters
+    mAhrs = AHRSFactory::create(params.mAhrsType, params.mFrequencyHz);
+    
     disconnect();
     return setupSocket(mClientSocketPath) && registerToServer() && setSocketTimeout(params.mTimeoutMs);
 }
@@ -77,8 +107,13 @@ void* IMUSubscriber::threadBody()
         }
         else
         {
-            // Process received data
-            printIMUData(imuData);
+            if (mAhrs != nullptr)
+            {
+                // Process received data with AHRS
+                mAhrs->update(imuData);
+            }
+            // Print the data
+            printIMUData(imuData, mAhrs);
         }
     }
     return nullptr;

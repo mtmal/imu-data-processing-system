@@ -9,11 +9,12 @@ sem_t semaphore;
 
 void printUsage(const char* programName)
 {
-    std::cout << "Usage: " << programName << " --socket-path <path> --log-level <level> --frequency-hz <freq>\n"
+    std::cout << "Usage: " << programName << " --socket-path <path> [options]\n"
               << "Options:\n"
               << "  --socket-path  : Unix domain socket path\n"
               << "  --log-level    : Logging level (TRACE, DEBUG, INFO, WARN, ERROR)\n"
-              << "  --timeout-ms   : Timeout in ms\n";
+              << "  --timeout-ms   : Timeout in ms\n"
+              << "  --ahrs-type    : AHRS algorithm (none, madgwick, simple)\n";
 }
 
 void signalHandler(int signum)

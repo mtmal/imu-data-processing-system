@@ -1,7 +1,9 @@
 #pragma once
 
 #include "IMUSocketHandler.h"
+#include <memory>
 
+class AHRS;
 struct Parameters;
 
 /**
@@ -69,4 +71,5 @@ private:
     void disconnect() override;
 
     std::string mClientSocketPath; ///< Path to the client socket
+    std::unique_ptr<AHRS> mAhrs;   ///< AHRS processor
 };
