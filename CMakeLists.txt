@@ -18,6 +18,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/include)
 add_executable(publisher 
     src/publisher.cpp
     src/IMUPublisher.cpp
+    src/utils.cpp
 )
 target_link_libraries(publisher 
     PRIVATE 

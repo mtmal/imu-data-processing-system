@@ -4,12 +4,13 @@
 #include <unistd.h>
 
 #include "IMUPublisher.h"
+#include "Parameters.h"
 
 constexpr long NSEC_PER_SEC = 1000000000L;
 
 IMUPublisher::IMUPublisher() 
     : mSocketPath("")
-    , mPeriodUs(0)
+    , mPeriodNs(0)
     , mSocket(-1)
 {
 }
@@ -19,10 +20,10 @@ IMUPublisher::~IMUPublisher()
     disconnect();
 }
 
-bool IMUPublisher::initialise(const std::string& socketPath, const int frequencyHz)
+bool IMUPublisher::initialise(const Parameters& params)
 {
-    mSocketPath = socketPath;
-    mPeriodUs = 1000000 / frequencyHz;
+    mSocketPath = params.mSocketPath;
+    mPeriodNs = 1000000000 / params.mFrequencyHz;
     setupRandomGenerator();
     disconnect();
     return setupSocket();
@@ -65,7 +66,7 @@ void* IMUPublisher::threadBody()
                            (endTime.tv_nsec - startTime.tv_nsec);
 
         // Calculate sleep time by subtracting processing time from period
-        sleepTimeNs = (mPeriodUs * 1000) - processingTimeNs;
+        sleepTimeNs = mPeriodNs - processingTimeNs;
         
         if (sleepTimeNs > 0)
         {

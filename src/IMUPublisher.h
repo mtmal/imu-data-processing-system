@@ -3,8 +3,12 @@
 #include <string>
 #include <random>
 #include <sys/un.h>
-#include "generic_thread.h"
+
+#include <generic_thread.h>
+
 #include "IMUTypes.h"
+
+struct Parameters;
 
 class IMUPublisher : public GenericThread<IMUPublisher>
 {
@@ -12,7 +16,7 @@ public:
     IMUPublisher();
     virtual ~IMUPublisher();
 
-    bool initialise(const std::string& socketPath, const int frequencyHz);
+    bool initialise(const Parameters& params);
 
     void* threadBody();
 
@@ -23,7 +27,7 @@ private:
     void generateRandomIMUData(Payload_IMU_t& imuData);
 
     std::string mSocketPath;
-    int mPeriodUs;
+    long mPeriodNs;
     int mSocket;
     std::mt19937 mGen;
     std::uniform_real_distribution<float> mAccDist;   // For accelerometer in mg
