@@ -1,3 +1,4 @@
+#include <filesystem>
 #include <scoped_lock.h>
 
 #include "communication/IMUPublisher.h"
@@ -86,10 +87,10 @@ void IMUPublisher::disconnect()
 {
     IMUSocketHandler::disconnect();
     
-    if (!mSocketPath.empty())
+    if (!mSocketPath.empty() && std::filesystem::exists(mSocketPath))
     {
-        spdlog::info("Unlinking existing socket.");
-        unlink(mSocketPath.c_str());
+        spdlog::info("Unlinking existing socket at {}", mSocketPath);
+        std::filesystem::remove(mSocketPath);
     }
 }
 

@@ -1,4 +1,5 @@
 #include <csignal>
+#include <filesystem>
 #include <iostream>
 #include <iomanip>
 
@@ -121,10 +122,10 @@ void IMUSubscriber::disconnect()
 {
     IMUSocketHandler::disconnect();
     
-    if (!mClientSocketPath.empty())
+    if (!mClientSocketPath.empty() && std::filesystem::exists(mClientSocketPath))
     {
-        spdlog::info("Unlinking existing socket.");
-        unlink(mClientSocketPath.c_str());
+        spdlog::info("Unlinking existing socket at {}", mClientSocketPath);
+        std::filesystem::remove(mClientSocketPath);
     }
 }
 
