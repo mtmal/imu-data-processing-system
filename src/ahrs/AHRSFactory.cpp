@@ -2,7 +2,7 @@
 #include "ahrs/MadgwickAHRS.h"
 #include "ahrs/SimpleAHRS.h"
 
-std::unique_ptr<AHRS> AHRSFactory::create(const AHRSType type, const float updateFrequencyHz)
+std::optional<std::unique_ptr<AHRS>> AHRSFactory::create(const AHRSType type, const float updateFrequencyHz)
 {
     switch (type)
     {
@@ -14,6 +14,6 @@ std::unique_ptr<AHRS> AHRSFactory::create(const AHRSType type, const float updat
             
         case AHRSType::NONE:
         default:
-            return nullptr;
+            return std::nullopt;
     }
 } 

@@ -66,7 +66,11 @@ bool IMUSubscriber::initialise(const Parameters& params)
     mClientSocketPath = mSocketPath + "_client" + std::to_string(getpid());
     
     // Create AHRS instance based on parameters
-    mAhrs = AHRSFactory::create(params.mAhrsType, params.mFrequencyHz);
+    auto ahrsOpt = AHRSFactory::create(params.mAhrsType, params.mFrequencyHz);
+    if (ahrsOpt)
+    {
+        mAhrs = std::move(*ahrsOpt);
+    }
     
     disconnect();
     return setupSocket(mClientSocketPath) && registerToServer() && setSocketTimeout(params.mTimeoutMs);
