@@ -38,7 +38,6 @@ add_executable(subscriber
     src/ahrs/AHRS.cpp
     src/ahrs/MadgwickAHRS.cpp
     src/ahrs/SimpleAHRS.cpp
-    src/ahrs/AHRSFactory.cpp
 )
 # Add include directories for subscriber
 target_include_directories(subscriber PRIVATE 

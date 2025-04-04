@@ -83,6 +83,12 @@ The project uses several design patterns:
 3. **Observer Pattern**: The publisher-subscriber model follows the observer pattern.
 4. **Template Method Pattern**: Base classes define the skeleton of operations, with specific steps implemented by derived classes.
 
+## Modern C++ Features
+
+The project demonstrates several modern C++17 features:
+
+1. **std::optional** and **std::variant**: Demonstrated as an alternative to inheritance-based polymorphism in the `VariantAHRS` class.
+
 ## Thread Safety
 
 - The publisher uses mutex protection for the subscriber list

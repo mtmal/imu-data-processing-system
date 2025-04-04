@@ -1,9 +1,11 @@
 #pragma once
 
-#include "IMUSocketHandler.h"
 #include <memory>
+#include <optional>
 
-class AHRS;
+#include "ahrs/VariantAHRS.h"
+#include "IMUSocketHandler.h"
+
 struct Parameters;
 
 /**
@@ -71,5 +73,5 @@ private:
     void disconnect() override;
 
     std::string mClientSocketPath; ///< Path to the client socket
-    std::unique_ptr<AHRS> mAhrs;   ///< AHRS processor
+    std::optional<VariantAHRS> mAhrs; ///< AHRS processor using variant approach
 };
