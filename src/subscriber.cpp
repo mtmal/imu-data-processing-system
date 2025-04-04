@@ -1,11 +1,11 @@
+#include <csignal>
 #include <iostream>
 #include <spdlog/spdlog.h>
-#include <signal.h>
 
-#include "IMUPublisher.h"
+#include "IMUSubscriber.h"
 #include "utils.h"
 
-sem_t sem_waiter;
+sem_t semaphore;
 
 void printUsage(const char* programName)
 {
@@ -13,20 +13,20 @@ void printUsage(const char* programName)
               << "Options:\n"
               << "  --socket-path  : Unix domain socket path\n"
               << "  --log-level    : Logging level (TRACE, DEBUG, INFO, WARN, ERROR)\n"
-              << "  --frequency-hz : Publication frequency in Hz\n";
+              << "  --timeout-ms   : Timeout in ms\n";
 }
 
 void signalHandler(int signum)
 {
     spdlog::info("Received signal: {}, stopping gracefully", signum);
-    sem_post(&sem_waiter);
+    sem_post(&semaphore);
 }
 
 int main(int argc, char* argv[])
 {
-    IMUPublisher publisher;
+    IMUSubscriber subscriber;
     Parameters params;
-    sem_init(&sem_waiter, 0, 0);
+    sem_init(&semaphore, 0, 0);
 
     // Set default logger level
     setupLogger("INFO");
@@ -42,24 +42,25 @@ int main(int argc, char* argv[])
     // register signal handlers
     signal(SIGINT, signalHandler);
     signal(SIGTERM, signalHandler);
+    signal(SIGALRM, signalHandler);
 
-    spdlog::info("Initialising IMU Publisher");
-    if (publisher.initialise(params))
+    spdlog::info("Initialising IMU Subscriber");
+    if (subscriber.initialise(params))
     {
-        spdlog::info("Starting IMU Publisher");
-        publisher.startThread();
-        spdlog::info("IMU Publisher is running. Press Ctrl+C to stop.");
+        spdlog::info("Starting IMU Subscriber");
+        subscriber.startThread();
+        spdlog::info("IMU Subscriber is running. Press Ctrl+C to stop.");
 
         // Main loop can be empty, as the thread handles the publishing
-        sem_wait(&sem_waiter);
+        sem_wait(&semaphore);
 
-        publisher.stopThread(true);
-        spdlog::info("IMU Publisher stopped");
+        subscriber.stopThread(true);
+        spdlog::info("Subscriber stopped");
     }
     else
     {
-        spdlog::error("Failed to initialise IMU Publisher");
+        spdlog::error("Failed to initialise IMU Subscriber");
     }
-    sem_destroy(&sem_waiter);
+    sem_destroy(&semaphore);
     return 0;
 }

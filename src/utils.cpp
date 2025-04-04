@@ -67,5 +67,15 @@ bool parseParameters(int argc, char* argv[], Parameters& params)
                 return false;
         }
     }
+    if (params.mSocketPath.empty())
+    {
+        spdlog::error("Socket path is required");
+        return false;
+    }
+    if (params.mFrequencyHz <= 0 || params.mFrequencyHz > 1000)
+    {
+        spdlog::error("Invalid frequency (must be between 1-1000 Hz)");
+        return false;
+    }
     return true;
 }

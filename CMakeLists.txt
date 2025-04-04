@@ -25,3 +25,15 @@ target_link_libraries(publisher
     pthread 
     spdlog::spdlog
 )
+
+# Create subscriber executable
+add_executable(subscriber 
+    src/subscriber.cpp
+    src/IMUSubscriber.cpp
+    src/utils.cpp
+)
+target_link_libraries(subscriber 
+    PRIVATE 
+    pthread 
+    spdlog::spdlog
+)

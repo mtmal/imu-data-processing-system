@@ -3,6 +3,7 @@
 #include <string>
 #include <random>
 #include <sys/un.h>
+#include <vector>
 
 #include <generic_thread.h>
 
@@ -24,6 +25,8 @@ private:
     bool setupSocket();
     void setupRandomGenerator();
     void generateRandomIMUData(Payload_IMU_t& imuData);
+    void checkForRegistrations();
+    void sendData(const Payload_IMU_t& imuData);
 
     std::string mSocketPath;
     long mPeriodNs;
@@ -32,4 +35,6 @@ private:
     std::uniform_real_distribution<float> mAccDist;   // For accelerometer in mg
     std::uniform_real_distribution<float> mGyroDist;  // For gyroscope in mdeg/s
     std::uniform_real_distribution<float> mMagDist;   // For magnetometer in mGauss
+    std::vector<struct sockaddr_un> mSubscribers;
+    pthread_mutex_t mSubscribersMutex;
 };
