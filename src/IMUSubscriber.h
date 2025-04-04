@@ -1,26 +1,27 @@
 #pragma once
 
-#include <string>
-#include <generic_thread.h>
+#include "IMUSocketHandler.h"
 
 struct Parameters;
 
-class IMUSubscriber : public GenericThread<IMUSubscriber>
+class IMUSubscriber : public IMUSocketHandler<IMUSubscriber>
 {
 public:
     IMUSubscriber();
     virtual ~IMUSubscriber();
 
-    bool initialise(const Parameters& params);
+    bool initialise(const Parameters& params) override;
 
     void* threadBody();
 
 private:
-    void disconnect();
-    bool setupSocket();
+    /**
+     * @brief Registers this subscriber to publisher
+     * @return true if the registration was successful
+     */
+    bool registerToServer();
+    void disconnect() override;
 
-    std::string mServerSocketPath;
     std::string mClientSocketPath;
-    int mSocket;
     ulong mTimeoutMs;
 };

@@ -4,33 +4,29 @@
 #include <random>
 #include <sys/un.h>
 #include <vector>
-
-#include <generic_thread.h>
+#include "IMUSocketHandler.h"
 
 struct Parameters;
 typedef struct Payload_IMU_s Payload_IMU_t;
 
-class IMUPublisher : public GenericThread<IMUPublisher>
+class IMUPublisher : public IMUSocketHandler<IMUPublisher>
 {
 public:
     IMUPublisher();
     virtual ~IMUPublisher();
 
-    bool initialise(const Parameters& params);
+    bool initialise(const Parameters& params) override;
 
     void* threadBody();
 
 private:
-    void disconnect();
-    bool setupSocket();
     void setupRandomGenerator();
     void generateRandomIMUData(Payload_IMU_t& imuData);
     void checkForRegistrations();
     void sendData(const Payload_IMU_t& imuData);
+    void disconnect() override;
 
-    std::string mSocketPath;
     long mPeriodNs;
-    int mSocket;
     std::mt19937 mGen;
     std::uniform_real_distribution<float> mAccDist;   // For accelerometer in mg
     std::uniform_real_distribution<float> mGyroDist;  // For gyroscope in mdeg/s

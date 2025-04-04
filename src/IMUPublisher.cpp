@@ -12,9 +12,8 @@
 constexpr long NSEC_PER_SEC = 1000000000L;
 
 IMUPublisher::IMUPublisher() 
-    : mSocketPath("")
+    : IMUSocketHandler()
     , mPeriodNs(0)
-    , mSocket(-1)
 {
     pthread_mutex_init(&mSubscribersMutex, nullptr);
 }
@@ -31,7 +30,7 @@ bool IMUPublisher::initialise(const Parameters& params)
     mPeriodNs = NSEC_PER_SEC / params.mFrequencyHz;
     setupRandomGenerator();
     disconnect();
-    return setupSocket();
+    return setupSocket(mSocketPath);
 }
 
 void* IMUPublisher::threadBody()
@@ -76,42 +75,13 @@ void* IMUPublisher::threadBody()
 
 void IMUPublisher::disconnect()
 {
-    if (mSocket >= 0)
-    {
-        spdlog::info("Closing exising socket.");
-        close(mSocket);
-    }
+    IMUSocketHandler::disconnect();
+    
     if (!mSocketPath.empty())
     {
-        spdlog::info("Unlinking exising socket.");
+        spdlog::info("Unlinking existing socket.");
         unlink(mSocketPath.c_str());
     }
-}
-
-bool IMUPublisher::setupSocket()
-{
-    spdlog::info("Creating socket at path: {}", mSocketPath);
-    mSocket = socket(AF_UNIX, SOCK_DGRAM, 0);
-    if (mSocket < 0)
-    {
-        spdlog::error("Failed to create the socket. Error code: {}", errno);
-        return false;
-    }
-
-    struct sockaddr_un addr;
-    memset(&addr, 0, sizeof(addr));
-    addr.sun_family = AF_UNIX;
-    strncpy(addr.sun_path, mSocketPath.c_str(), sizeof(addr.sun_path)-1);
-
-    if (bind(mSocket, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)) < 0)
-    {
-        spdlog::error("Failed to bind the socket. Error code: {}", errno);
-        close(mSocket);
-        return false;
-    }
-
-    spdlog::info("Socket created successfully.");
-    return true;
 }
 
 void IMUPublisher::setupRandomGenerator()

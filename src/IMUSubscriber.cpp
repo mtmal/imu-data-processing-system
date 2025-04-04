@@ -29,10 +29,9 @@ void printIMUData(const Payload_IMU_t& data)
 }
 
 IMUSubscriber::IMUSubscriber()
-: mServerSocketPath(""),
-  mClientSocketPath(""),
-  mSocket(-1),
-  mTimeoutMs(0)
+: IMUSocketHandler()
+, mClientSocketPath("")
+, mTimeoutMs(0)
 {
 }
 
@@ -43,11 +42,11 @@ IMUSubscriber::~IMUSubscriber()
 
 bool IMUSubscriber::initialise(const Parameters& params)
 {
-    mServerSocketPath = params.mSocketPath;
-    mClientSocketPath = mServerSocketPath + "_client" + std::to_string(getpid());
+    mSocketPath = params.mSocketPath;
+    mClientSocketPath = mSocketPath + "_client" + std::to_string(getpid());
     mTimeoutMs = params.mTimeoutUs;
     disconnect();
-    return setupSocket();
+    return setupSocket(mClientSocketPath) && registerToServer();
 }
 
 void* IMUSubscriber::threadBody()
@@ -79,7 +78,7 @@ void* IMUSubscriber::threadBody()
         {
             if (errno == EAGAIN || errno == EWOULDBLOCK)
             {
-                // Timeout occurred. Log error and rais SIGALRM
+                // Timeout occurred. Log error and raise SIGALRM
                 spdlog::error("Timeout, the publisher might be down. Exiting...");
                 raise(SIGALRM);
             }
@@ -107,49 +106,22 @@ void* IMUSubscriber::threadBody()
 
 void IMUSubscriber::disconnect()
 {
-    if (mSocket >= 0)
-    {
-        spdlog::info("Closing exising socket.");
-        close(mSocket);
-    }
+    IMUSocketHandler::disconnect();
+    
     if (!mClientSocketPath.empty())
     {
-        spdlog::info("Unlinking exising socket.");
+        spdlog::info("Unlinking existing socket.");
         unlink(mClientSocketPath.c_str());
     }
 }
 
-bool IMUSubscriber::setupSocket()
-{
-    spdlog::info("Creating socket at path: {}", mServerSocketPath);
-    mSocket = socket(AF_UNIX, SOCK_DGRAM, 0);
-    if (mSocket < 0)
-    {
-        spdlog::error("Failed to create the socket. Error code: {}", strerror(errno));
-        return false;
-    }
-        
-    // Set up client address
-    struct sockaddr_un client_addr;
-    memset(&client_addr, 0, sizeof(client_addr));
-    client_addr.sun_family = AF_UNIX;
-    strncpy(client_addr.sun_path, mClientSocketPath.c_str(), sizeof(client_addr.sun_path) - 1);
-    
-    // Remove if it exists
-    unlink(mClientSocketPath.c_str());
-    
-    // Bind to client address
-    if (bind(mSocket, reinterpret_cast<struct sockaddr*>(&client_addr), sizeof(client_addr)) < 0)
-    {
-        spdlog::error("Error binding client socket: {}", strerror(errno));
-        return false;
-    }
-    
+bool IMUSubscriber::registerToServer()
+{   
     // Set up server address
     struct sockaddr_un server_addr;
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sun_family = AF_UNIX;
-    strncpy(server_addr.sun_path, mServerSocketPath.c_str(), sizeof(server_addr.sun_path) - 1);
+    strncpy(server_addr.sun_path, mSocketPath.c_str(), sizeof(server_addr.sun_path) - 1);
     
     // Send registration message to publisher
     if (sendto(mSocket, REG_MSG, strlen(REG_MSG), 0, 
