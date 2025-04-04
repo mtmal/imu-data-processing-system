@@ -11,9 +11,10 @@
 
 constexpr long NSEC_PER_SEC = 1000000000L;
 
-IMUPublisher::IMUPublisher() 
-    : IMUSocketHandler()
-    , mPeriodNs(0)
+IMUPublisher::IMUPublisher(IMUDataProvider& dataProvider) 
+: IMUSocketHandler(),
+  mDataProvider(dataProvider),
+  mPeriodNs(0)
 {
     pthread_mutex_init(&mSubscribersMutex, nullptr);
 }
@@ -28,7 +29,14 @@ bool IMUPublisher::initialise(const Parameters& params)
 {
     mSocketPath = params.mSocketPath;
     mPeriodNs = NSEC_PER_SEC / params.mFrequencyHz;
-    setupRandomGenerator();
+    
+    // Initialize the data provider
+    if (!mDataProvider.initialize())
+    {
+        spdlog::error("Failed to initialize IMU data provider");
+        return false;
+    }
+    
     disconnect();
     return setupSocket(mSocketPath);
 }
@@ -46,17 +54,23 @@ void* IMUPublisher::threadBody()
     {
         // Get time at the start of the loop
         clock_gettime(CLOCK_MONOTONIC, &startTime);
+        
         // Check for new subscriber registrations
         checkForRegistrations();
-        // Generate new random data
-        generateRandomIMUData(imuData);
+        
+        // Get IMU data from the provider
+        mDataProvider.getIMUData(imuData);
+        
         // Send data to all subscribers
         sendData(imuData);
+        
         // Get time after data was generated and published
         clock_gettime(CLOCK_MONOTONIC, &endTime);
+        
         // Calculate processing time
         processingTimeNs = (endTime.tv_sec - startTime.tv_sec) * NSEC_PER_SEC + 
                            (endTime.tv_nsec - startTime.tv_nsec);
+        
         // Calculate sleep time by subtracting processing time from period
         sleepTimeNs = mPeriodNs - processingTimeNs;
         if (sleepTimeNs > 0)
@@ -82,37 +96,6 @@ void IMUPublisher::disconnect()
         spdlog::info("Unlinking existing socket.");
         unlink(mSocketPath.c_str());
     }
-}
-
-void IMUPublisher::setupRandomGenerator()
-{
-    std::random_device rd;
-    mGen = std::mt19937(rd());
-    mAccDist = std::uniform_real_distribution<float>(-16000.0f, 16000.0f);
-    mGyroDist = std::uniform_real_distribution<float>(-2000000.0f, 2000000.0f);
-    mMagDist = std::uniform_real_distribution<float>(200.0f, 600.0f);
-    spdlog::info("Random generator setup complete.");
-}
-
-void IMUPublisher::generateRandomIMUData(Payload_IMU_t& imuData)
-{
-    struct timespec ts;
-    clock_gettime(CLOCK_REALTIME, &ts);
-
-    imuData.xAcc = mAccDist(mGen);
-    imuData.yAcc = mAccDist(mGen);
-    imuData.zAcc = mAccDist(mGen);
-    imuData.timestampAcc = static_cast<uint32_t>(ts.tv_sec * 1000 + ts.tv_nsec / 1000000);
-
-    imuData.xGyro = mGyroDist(mGen);
-    imuData.yGyro = mGyroDist(mGen);
-    imuData.zGyro = mGyroDist(mGen);
-    imuData.timestampGyro = imuData.timestampAcc;
-
-    imuData.xMag = mMagDist(mGen);
-    imuData.yMag = mMagDist(mGen);
-    imuData.zMag = mMagDist(mGen);
-    imuData.timestampMag = imuData.timestampAcc;
 }
 
 void IMUPublisher::checkForRegistrations()

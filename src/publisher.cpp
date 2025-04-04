@@ -3,6 +3,7 @@
 #include <signal.h>
 
 #include "IMUPublisher.h"
+#include "RandomIMUDataProvider.h"
 #include "utils.h"
 
 sem_t sem_waiter;
@@ -24,7 +25,12 @@ void signalHandler(int signum)
 
 int main(int argc, char* argv[])
 {
-    IMUPublisher publisher;
+    // Create the random data provider
+    RandomIMUDataProvider dataProvider;
+    
+    // Create the publisher with the data provider
+    IMUPublisher publisher(dataProvider);
+    
     Parameters params;
     sem_init(&sem_waiter, 0, 0);
 

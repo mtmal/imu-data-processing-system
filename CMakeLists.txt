@@ -19,6 +19,7 @@ add_executable(publisher
     src/publisher.cpp
     src/IMUPublisher.cpp
     src/utils.cpp
+    src/RandomIMUDataProvider.cpp
 )
 target_link_libraries(publisher 
     PRIVATE 
@@ -37,3 +38,7 @@ target_link_libraries(subscriber
     pthread 
     spdlog::spdlog
 )
+
+# Set include directories for both targets
+target_include_directories(publisher PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
+target_include_directories(subscriber PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/src)
