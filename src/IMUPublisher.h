@@ -6,9 +6,8 @@
 
 #include <generic_thread.h>
 
-#include "IMUTypes.h"
-
 struct Parameters;
+typedef struct Payload_IMU_s Payload_IMU_t;
 
 class IMUPublisher : public GenericThread<IMUPublisher>
 {

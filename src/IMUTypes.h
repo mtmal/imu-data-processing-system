@@ -4,7 +4,7 @@
  * A structure holding IMU data.
  * @note gyro measurements were changed from int32_t to float to match other fields.
  */
-typedef struct
+typedef struct Payload_IMU_s
 {
     float xAcc; // Acceleration [mg, g=9.81]
     float yAcc; // Acceleration [mg, g=9.81]

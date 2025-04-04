@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 #include "IMUPublisher.h"
+#include "IMUTypes.h"
 #include "Parameters.h"
 
 constexpr long NSEC_PER_SEC = 1000000000L;
