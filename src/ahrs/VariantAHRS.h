@@ -1,12 +1,13 @@
 #pragma once
 
-#include <variant>
 #include <optional>
-#include <functional>
-#include "core/PayloadIMU.h"
+#include <variant>
+#include <spdlog/spdlog.h>
 #include "core/AHRSType.h"
 #include "ahrs/MadgwickAHRS.h"
 #include "ahrs/SimpleAHRS.h"
+
+typedef struct Payload_IMU_s Payload_IMU_t;
 
 /**
  * @brief A variant-based AHRS implementation that uses std::variant instead of inheritance
@@ -51,9 +52,9 @@ public:
      * 
      * @param payload The IMU payload data
      */
-    void update(const Payload_IMU_t& payload)
+    inline void update(const Payload_IMU_t& payload)
     {
-        std::visit([&payload](auto& ahrs) { ahrs.update(payload); }, mVariant);
+        std::visit([this, &payload](auto& ahrs) { this->processAHRSData(payload, ahrs); }, mVariant);
     }
     
     /**
@@ -61,7 +62,7 @@ public:
      * 
      * @return Pointer to the quaternion array [w, x, y, z]
      */
-    const float* getQuaternion() const
+    inline const float* getQuaternion() const
     {
         return std::visit([](const auto& ahrs) { return ahrs.getQuaternion(); }, mVariant);
     }
@@ -71,7 +72,7 @@ public:
      * 
      * @return Pointer to the angles array [roll, pitch, yaw] in degrees
      */
-    const float* getAngles() const
+    inline const float* getAngles() const
     {
         return std::visit([](const auto& ahrs) { return ahrs.getAngles(); }, mVariant);
     }
@@ -84,6 +85,29 @@ private:
      */
     template <typename T>
     explicit VariantAHRS(T&& ahrs) : mVariant(std::forward<T>(ahrs)) {}
+
+    template <typename T>
+    void processAHRSData(const Payload_IMU_t& data, T& ahrs)
+    {
+        // Use constexpr if to handle different AHRS types at compile time
+        if constexpr (std::is_same_v<T, MadgwickAHRS>)
+        {
+            // Madgwick-specific pre-processing
+            spdlog::debug("Processing with Madgwick algorithm");
+        } 
+        else if constexpr (std::is_same_v<T, SimpleAHRS>)
+        {
+            // Simple-specific pre-processing
+            spdlog::debug("Processing with Simple algorithm");
+        }
+        else
+        {
+            // nothing to do in here
+        }
+        
+        // Common processing
+        ahrs.update(data);
+    }
     
     AHRSVariant mVariant; ///< The variant holding the AHRS implementation
 };
