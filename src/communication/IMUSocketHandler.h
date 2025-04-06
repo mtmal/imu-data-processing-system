@@ -1,14 +1,9 @@
 #pragma once
 
-#include <string>
-#include <sys/socket.h>
-#include <sys/un.h>
-#include <unistd.h>
-#include <generic_thread.h>
-#include <spdlog/spdlog.h>
+#include <atomic>
+#include <pthread.h>
 
-// Forward declarations
-struct Parameters;
+#include "core/Parameters.h"
 
 /**
  * @brief Base class for IMU socket communication handling
@@ -17,22 +12,19 @@ struct Parameters;
  * used by both publisher and subscriber components. It handles
  * socket creation, binding, and cleanup operations.
  */
-template <typename T>
-class IMUSocketHandler : public GenericThread<T>
+class IMUSocketHandler
 {
 public:
     /**
-     * @brief Constructor initializes socket-related members
+     * @brief Constructor initializes socket and thread-related members
+     * @param realTime Flag to enable real-time thread configuration
      */
-    IMUSocketHandler() : mSocketPath(""), mSocket(-1) {}
+    IMUSocketHandler(const bool realTime = false);
 
     /**
-     * @brief Destructor ensures socket resources are cleaned up
+     * @brief Destructor ensures proper cleanup
      */
-    virtual ~IMUSocketHandler()
-    {
-        disconnect();
-    }
+    virtual ~IMUSocketHandler();
 
     /**
      * @brief Initialize the socket handler with parameters
@@ -43,7 +35,36 @@ public:
      * @param params The parameters structure
      * @return true if initialization was successful, false otherwise
      */
-    virtual bool initialise(const Parameters& params) = 0;
+    virtual bool initialise(const Parameters& params);
+
+    /**
+     * @brief Starts the handler thread with real-time settings if enabled
+     * 
+     * @param priority Thread priority (1-99 for real-time, ignored if realTime was set to false)
+     * @param policy Scheduling policy (SCHED_FIFO or SCHED_RR for real-time)
+     * @return true if the thread was successfully started
+     */
+    bool startThread(const int priority = 50, const int policy = SCHED_FIFO);
+
+    /**
+     * @brief Stops the handler thread
+     */
+    void stopThread();
+
+    /**
+     * @brief Check if the thread is running
+     * 
+     * @return true if the thread is running
+     */
+    inline bool isRunning() const
+    {
+        return mRun.load(std::memory_order_acquire);
+    }
+
+    /**
+     * @brief the main body of the thread
+     */
+    virtual void threadBody() = 0;
 
 protected:
     /**
@@ -52,15 +73,7 @@ protected:
      * Closes the socket if it's open. Derived classes should
      * override this to perform additional cleanup if needed.
      */
-    virtual void disconnect()
-    {
-        if (mSocket >= 0)
-        {
-            spdlog::info("Closing existing socket.");
-            close(mSocket);
-            mSocket = -1;
-        }
-    }
+    virtual void disconnect();
     
     /**
      * @brief Set up the socket for communication
@@ -70,32 +83,17 @@ protected:
      * @param socketToBind The path to bind the socket to
      * @return true if socket setup was successful, false otherwise
      */
-    virtual bool setupSocket(const std::string& socketToBind)
-    {
-        spdlog::info("Creating socket at path: {}", mSocketPath);
-        mSocket = socket(AF_UNIX, SOCK_DGRAM, 0);
-        if (mSocket < 0)
-        {
-            spdlog::error("Failed to create the socket. Error code: {}", strerror(errno));
-            return false;
-        }
+    virtual bool setupSocket(const std::string& socketToBind);
 
-        struct sockaddr_un addr;
-        memset(&addr, 0, sizeof(addr));
-        addr.sun_family = AF_UNIX;
-        strncpy(addr.sun_path, socketToBind.c_str(), sizeof(addr.sun_path) - 1);
-        
-        // Bind to the address
-        if (bind(mSocket, reinterpret_cast<struct sockaddr*>(&addr), sizeof(addr)) < 0)
-        {
-            spdlog::error("Failed to bind a socket: {0}, error message: {1}", socketToBind, strerror(errno));
-            return false;
-        }
-
-        spdlog::info("Socket created successfully.");
-        return true;
-    }
-
-    std::string mSocketPath; ///< Path to the socket
     int mSocket;             ///< Socket file descriptor
+    Parameters mParameters;  ///< Configuration parameters
+
+private:
+    /**
+     * @brief Static thread entry point
+     */
+    static void* startThread(void* instance);
+
+    pthread_t mThread;        ///< Thread handle
+    std::atomic<bool> mRun;   ///< Thread running flag
 };

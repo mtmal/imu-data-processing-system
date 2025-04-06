@@ -2,9 +2,10 @@
 #include <filesystem>
 #include <iostream>
 #include <iomanip>
+#include <sys/socket.h>
+#include <sys/un.h>
 
 #include "communication/IMUSubscriber.h"
-#include "core/Parameters.h"
 #include "core/PayloadIMU.h"
 
 inline constexpr char REG_MSG[9] = "REGISTER";
@@ -61,17 +62,17 @@ IMUSubscriber::~IMUSubscriber()
 
 bool IMUSubscriber::initialise(const Parameters& params)
 {
-    mSocketPath = params.mSocketPath;
-    mClientSocketPath = mSocketPath + "_client" + std::to_string(getpid());
+    IMUSocketHandler::initialise(params);
+    mClientSocketPath = params.mSocketPath + "_client" + std::to_string(getpid());
     
     // Create AHRS instance based on parameters
     mAhrs = VariantAHRS::create(params.mAhrsType, params.mFrequencyHz);
     
     disconnect();
-    return setupSocket(mClientSocketPath) && registerToServer() && setSocketTimeout(params.mTimeoutMs);
+    return setupSocket(mClientSocketPath) && registerToServer() && setSocketTimeout();
 }
 
-void* IMUSubscriber::threadBody()
+void IMUSubscriber::threadBody()
 {
     Payload_IMU_t imuData;
     ssize_t bytes_read;
@@ -115,7 +116,6 @@ void* IMUSubscriber::threadBody()
             printIMUData(imuData, mAhrs);
         }
     }
-    return nullptr;
 }
 
 void IMUSubscriber::disconnect()
@@ -135,7 +135,7 @@ bool IMUSubscriber::registerToServer()
     struct sockaddr_un server_addr;
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sun_family = AF_UNIX;
-    strncpy(server_addr.sun_path, mSocketPath.c_str(), sizeof(server_addr.sun_path) - 1);
+    strncpy(server_addr.sun_path, mParameters.mSocketPath.c_str(), sizeof(server_addr.sun_path) - 1);
     
     // Send registration message to publisher
     if (sendto(mSocket, REG_MSG, strlen(REG_MSG), 0, 
@@ -149,13 +149,13 @@ bool IMUSubscriber::registerToServer()
     return true;
 }
 
-bool IMUSubscriber::setSocketTimeout(const ulong timeoutMs)
+bool IMUSubscriber::setSocketTimeout()
 {
-    if (timeoutMs > 0)
+    if (mParameters.mTimeoutMs > 0)
     {
         struct timeval tv;
-        tv.tv_sec = timeoutMs / 1000;  // Convert ms to seconds
-        tv.tv_usec = (timeoutMs % 1000) * 1000;  // Remaining ms to microseconds
+        tv.tv_sec = mParameters.mTimeoutMs / 1000;  // Convert ms to seconds
+        tv.tv_usec = (mParameters.mTimeoutMs % 1000) * 1000;  // Remaining ms to microseconds
         
         if (setsockopt(mSocket, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0)
         {

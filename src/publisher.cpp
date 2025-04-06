@@ -1,5 +1,7 @@
 #include <iostream>
+#include <semaphore.h>
 #include <signal.h>
+#include <spdlog/spdlog.h>
 
 #include "communication/IMUPublisher.h"
 #include "core/Parameters.h"
@@ -10,11 +12,14 @@ sem_t sem_waiter;
 
 void printUsage(const char* programName)
 {
-    std::cout << "Usage: " << programName << " --socket-path <path> --log-level <level> --frequency-hz <freq>\n"
+    std::cout << "Usage: " << programName << " --socket-path <path> [options]\n"
               << "Options:\n"
               << "  --socket-path  : Unix domain socket path\n"
               << "  --log-level    : Logging level (TRACE, DEBUG, INFO, WARN, ERROR)\n"
-              << "  --frequency-hz : Publication frequency in Hz\n";
+              << "  --frequency-hz : Publication frequency in Hz\n"
+              << "  --real-time    : Enable real-time thread configuration\n"
+              << "  --priority     : Thread priority (1-99, only with --real-time)\n"
+              << "  --policy       : Scheduling policy (FIFO or RR, only with --real-time)\n";
 }
 
 void signalHandler(int signum)
@@ -28,7 +33,7 @@ int main(int argc, char* argv[])
     // Create the random data provider
     RandomIMUDataProvider dataProvider;
     
-    // Create the publisher with the data provider
+    // Create the publisher with the data provider and real-time setting
     IMUPublisher publisher(dataProvider);
     
     Parameters params;
@@ -59,7 +64,7 @@ int main(int argc, char* argv[])
         // Main loop can be empty, as the thread handles the publishing
         sem_wait(&sem_waiter);
 
-        publisher.stopThread(true);
+        publisher.stopThread();
         spdlog::info("IMU Publisher stopped");
     }
     else

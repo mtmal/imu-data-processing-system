@@ -10,13 +10,11 @@ find_package(Threads REQUIRED)
 # Add logging library (spdlog)
 find_package(spdlog REQUIRED)
 
-# Add utils directory to include paths
-include_directories(${CMAKE_CURRENT_SOURCE_DIR}/utils/src)
-
 # Create publisher executable
 add_executable(publisher 
     src/publisher.cpp
     src/communication/IMUPublisher.cpp
+    src/communication/IMUSocketHandler.cpp
     src/utils/utils.cpp
     src/providers/RandomIMUDataProvider.cpp
 )
@@ -34,6 +32,7 @@ target_link_libraries(publisher PRIVATE pthread spdlog::spdlog)
 add_executable(subscriber
     src/subscriber.cpp
     src/communication/IMUSubscriber.cpp
+    src/communication/IMUSocketHandler.cpp
     src/utils/utils.cpp
     src/ahrs/AHRS.cpp
     src/ahrs/MadgwickAHRS.cpp

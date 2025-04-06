@@ -1,29 +1,48 @@
 #include <filesystem>
-#include <scoped_lock.h>
+#include <spdlog/spdlog.h>
+#include <sys/socket.h>
+#include <sys/un.h>
 
 #include "communication/IMUPublisher.h"
-#include "core/Parameters.h"
 #include "core/PayloadIMU.h"
 
+namespace
+{
 inline constexpr long NSEC_PER_SEC = 1000000000L;
+
+class ScopedLock
+{
+public:
+    explicit ScopedLock(pthread_mutex_t& lock) : mLock(lock)
+    {
+        pthread_mutex_lock(&mLock);
+    }
+
+    virtual ~ScopedLock()
+    {
+        pthread_mutex_unlock(&mLock);
+    }
+
+private:
+    pthread_mutex_t& mLock;
+};
+} // end of anonymous namespace
 
 IMUPublisher::IMUPublisher(IMUDataProvider& dataProvider) 
 : IMUSocketHandler(),
   mDataProvider(dataProvider),
   mPeriodNs(0)
 {
-    pthread_mutex_init(&mSubscribersMutex, nullptr);
 }
 
 IMUPublisher::~IMUPublisher()
 {
     disconnect();
-    pthread_mutex_destroy(&mSubscribersMutex);
 }
 
 bool IMUPublisher::initialise(const Parameters& params)
 {
-    mSocketPath = params.mSocketPath;
+    IMUSocketHandler::initialise(params);
     mPeriodNs = NSEC_PER_SEC / params.mFrequencyHz;
     
     // Initialize the data provider
@@ -34,10 +53,10 @@ bool IMUPublisher::initialise(const Parameters& params)
     }
     
     disconnect();
-    return setupSocket(mSocketPath);
+    return setupSocket(params.mSocketPath);
 }
 
-void* IMUPublisher::threadBody()
+void IMUPublisher::threadBody()
 {
     Payload_IMU_t imuData;
     struct timespec startTime;
@@ -45,6 +64,17 @@ void* IMUPublisher::threadBody()
     struct timespec sleepTime;
     long processingTimeNs;
     long sleepTimeNs;
+    pthread_mutexattr_t mutexAttr;
+
+    pthread_mutexattr_init(&mutexAttr);
+    
+    // Enable priority inheritance for real-time operation
+    if (mParameters.mRealTime)
+    {
+        pthread_mutexattr_setprotocol(&mutexAttr, PTHREAD_PRIO_INHERIT);
+    }
+    
+    pthread_mutex_init(&mSubscribersMutex, &mutexAttr);
 
     while (isRunning())
     {
@@ -80,17 +110,19 @@ void* IMUPublisher::threadBody()
             spdlog::warn("Processing time exceeded period by {} us", -sleepTimeNs / 1000);
         }
     }
-    return nullptr;
+    
+    pthread_mutex_destroy(&mSubscribersMutex);
+    pthread_mutexattr_destroy(&mutexAttr);
 }
 
 void IMUPublisher::disconnect()
 {
     IMUSocketHandler::disconnect();
     
-    if (!mSocketPath.empty() && std::filesystem::exists(mSocketPath))
+    if (!mParameters.mSocketPath.empty() && std::filesystem::exists(mParameters.mSocketPath))
     {
-        spdlog::info("Unlinking existing socket at {}", mSocketPath);
-        std::filesystem::remove(mSocketPath);
+        spdlog::info("Unlinking existing socket at {}", mParameters.mSocketPath);
+        std::filesystem::remove(mParameters.mSocketPath);
     }
 }
 

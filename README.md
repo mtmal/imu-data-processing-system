@@ -17,6 +17,7 @@ The system consists of two main components:
 - Timeout handling for detecting disconnected publishers
 - AHRS algorithms for orientation estimation
 - Clean object-oriented design with factory pattern for AHRS creation
+- Real-time execution support (experimental)
 
 ## Architecture
 
@@ -54,18 +55,21 @@ make
 ### Publisher
 
 ```bash
-./publisher --socket-path /tmp/imu_socket --frequency-hz 100 --log-level INFO
+./publisher --socket-path /tmp/imu_socket --frequency-hz 100 --log-level INFO [--real-time] [--priority 80] [--policy FIFO]
 ```
 
 Options:
 - `--socket-path`: Path to the Unix domain socket
 - `--frequency-hz`: Data generation frequency in Hz
 - `--log-level`: Logging level (TRACE, DEBUG, INFO, WARN, ERROR)
+- `--real-time`: Enable real-time thread configuration
+- `--priority`: Thread priority (1-99, only with --real-time)
+- `--policy`: Scheduling policy (FIFO or RR, only with --real-time)
 
 ### Subscriber
 
 ```bash
-./subscriber --socket-path /tmp/imu_socket --log-level INFO --timeout-ms 5000 --ahrs-type madgwick
+./subscriber --socket-path /tmp/imu_socket --log-level INFO --timeout-ms 5000 --ahrs-type madgwick [--real-time] [--priority 75] [--policy FIFO]
 ```
 
 Options:
@@ -73,6 +77,52 @@ Options:
 - `--log-level`: Logging level (TRACE, DEBUG, INFO, WARN, ERROR)
 - `--timeout-ms`: Timeout in milliseconds for detecting disconnected publisher
 - `--ahrs-type`: AHRS algorithm to use (none, madgwick, simple)
+- `--real-time`: Enable real-time thread configuration
+- `--priority`: Thread priority (1-99, only with --real-time)
+- `--policy`: Scheduling policy (FIFO or RR, only with --real-time)
+
+## Real-Time Execution Support (Experimental)
+
+**⚠️ IMPORTANT: The real-time features have not been tested in a real-time environment. Use at your own risk.**
+
+The system includes experimental support for real-time execution with the following features:
+
+- Real-time thread scheduling (SCHED_FIFO or SCHED_RR)
+- Configurable thread priorities (1-99)
+- Memory locking to prevent paging
+- Priority inheritance for mutexes
+- Separate priority levels for publisher and subscriber
+
+### Real-Time Requirements
+
+To use real-time features:
+
+1. **System Requirements**:
+   - Real-time kernel (PREEMPT_RT patch or similar)
+   - Appropriate user permissions for real-time scheduling
+
+2. **System Configuration**:
+   ```bash
+   # Add to /etc/security/limits.conf:
+   your_username    hard    rtprio    99
+   your_username    soft    rtprio    99
+   ```
+
+3. **Recommended Practices**:
+   - Disable CPU frequency scaling
+   - Disable power management features
+   - Consider CPU isolation using kernel boot parameters
+   - Configure network interfaces with appropriate priorities
+
+### Real-Time Usage Example
+
+```bash
+# Publisher with real-time enabled
+sudo ./publisher --socket-path /tmp/imu_socket --frequency-hz 100 --real-time --priority 80 --policy FIFO
+
+# Subscriber with real-time enabled
+sudo ./subscriber --socket-path /tmp/imu_socket --timeout-ms 5000 --ahrs-type madgwick --real-time --priority 75 --policy FIFO
+```
 
 ## Design Patterns
 

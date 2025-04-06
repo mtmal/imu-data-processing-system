@@ -1,5 +1,6 @@
 #include <getopt.h>
 #include <spdlog/spdlog.h>
+#include <sched.h>
 
 #include "core/Parameters.h"
 #include "utils/utils.h"
@@ -42,11 +43,14 @@ bool parseParameters(int argc, char* argv[], Parameters& params)
         {"frequency-hz", required_argument, 0, 'f'},
         {"timeout-ms", required_argument, 0, 't'},
         {"ahrs-type", required_argument, 0, 'a'},
+        {"real-time", no_argument, 0, 'r'},
+        {"priority", required_argument, 0, 'p'},
+        {"policy", required_argument, 0, 'P'},
         {0, 0, 0, 0}
     };
 
     int opt;
-    while ((opt = getopt_long(argc, argv, "s:l:f:t:a:", long_options, nullptr)) != -1)
+    while ((opt = getopt_long(argc, argv, "s:l:f:t:a:rp:P:", long_options, nullptr)) != -1)
     {
         switch (opt)
         {
@@ -80,6 +84,45 @@ bool parseParameters(int argc, char* argv[], Parameters& params)
                 {
                     params.mAhrsType = AHRSType::NONE;
                     spdlog::info("AHRS: Disabled");
+                }
+                break;
+            case 'r':
+                params.mRealTime = true;
+                spdlog::info("Real-time mode enabled");
+                break;
+            case 'p':
+                {
+                    int priority = std::stoi(optarg);
+                    if (priority >= 1 && priority <= 99)
+                    {
+                        params.mPriority = priority;
+                        spdlog::info("Thread priority set to: {}", priority);
+                    }
+                    else
+                    {
+                        spdlog::error("Invalid priority value (must be 1-99): {}", priority);
+                        return false;
+                    }
+                }
+                break;
+            case 'P':
+                {
+                    std::string policy = optarg;
+                    if (policy == "FIFO")
+                    {
+                        params.mPolicy = SCHED_FIFO;
+                        spdlog::info("Scheduling policy: FIFO");
+                    }
+                    else if (policy == "RR")
+                    {
+                        params.mPolicy = SCHED_RR;
+                        spdlog::info("Scheduling policy: Round Robin");
+                    }
+                    else
+                    {
+                        spdlog::error("Invalid scheduling policy (must be FIFO or RR): {}", policy);
+                        return false;
+                    }
                 }
                 break;
             default:

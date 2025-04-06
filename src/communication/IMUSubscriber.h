@@ -1,12 +1,8 @@
 #pragma once
 
-#include <memory>
 #include <optional>
-
 #include "ahrs/VariantAHRS.h"
 #include "IMUSocketHandler.h"
-
-struct Parameters;
 
 /**
  * @brief IMU data subscriber using Unix domain sockets
@@ -15,7 +11,7 @@ struct Parameters;
  * using Unix domain datagram sockets. It handles registration with
  * the publisher and processing of received IMU data.
  */
-class IMUSubscriber : public IMUSocketHandler<IMUSubscriber>
+class IMUSubscriber : public IMUSocketHandler
 {
 public:
     /**
@@ -44,10 +40,8 @@ public:
      * 
      * This method runs in a separate thread and handles the
      * reception and processing of IMU data from the publisher.
-     * 
-     * @return Thread result (always nullptr)
      */
-    void* threadBody();
+    void threadBody() override;
 
 private:
     /**
@@ -65,7 +59,7 @@ private:
      * 
      * @return true if the timeout was successfully set
      */
-    bool setSocketTimeout(const ulong timeoutMs);
+    bool setSocketTimeout();
     
     /**
      * @brief Extended disconnect method to clean up socket files

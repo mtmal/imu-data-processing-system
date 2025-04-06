@@ -13,7 +13,7 @@ struct Parameters;
  * to subscribers using Unix domain datagram sockets. It handles
  * subscriber registration and data distribution.
  */
-class IMUPublisher : public IMUSocketHandler<IMUPublisher>
+class IMUPublisher : public IMUSocketHandler
 {
 public:
     /**
@@ -44,10 +44,8 @@ public:
      * 
      * This method runs in a separate thread and handles the
      * periodic publishing of IMU data to subscribers.
-     * 
-     * @return Thread result (always nullptr)
      */
-    void* threadBody();
+    void threadBody() override;
 
 private:
     /**
